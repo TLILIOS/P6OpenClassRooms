@@ -72,6 +72,8 @@ extension Endpoint {
             return RegisterRequest(email: email, password: password, firstName: firstName, lastName: lastName)
         case .createCandidate(let candidate), .updateCandidate(_, let candidate):
             return candidate
+        case .toggleFavorite:
+            return EmptyRequest()
         default:
             return nil
         }

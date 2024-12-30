@@ -10,12 +10,17 @@ import Foundation
 class MockNetworkService: NetworkServiceProtocol {
     var mockResponses: [URL: Result<Data, Error>] = [:]
     var token: String?
+    var mockError: Error?
     
     func setToken(_ token: String) async {
         self.token = token
     }
     
     func request<T: Decodable>(_ endpoint: Endpoint) async throws -> T {
+        if let error = mockError {
+            throw error
+        }
+        
         guard let url = endpoint.url else {
             throw NetworkService.NetworkError.invalidURL
         }
@@ -42,6 +47,10 @@ class MockNetworkService: NetworkServiceProtocol {
     }
     
     func requestWithoutResponse(_ endpoint: Endpoint) async throws {
+        if let error = mockError {
+            throw error
+        }
+        
         guard let url = endpoint.url else {
             throw NetworkService.NetworkError.invalidURL
         }

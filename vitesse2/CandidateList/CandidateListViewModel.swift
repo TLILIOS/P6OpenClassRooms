@@ -22,19 +22,36 @@ class CandidateListViewModel: ObservableObject {
     // Modifier la déclaration du networkService
     private let networkService: NetworkServiceProtocol
     let isAdmin: Bool
-    // Modifier l'initialisation
+    // MARK: - Initialization
     init(networkService: NetworkServiceProtocol = NetworkService.shared,
-             isAdmin: Bool,
-             shouldFetchOnInit: Bool = true) {
-            self.networkService = networkService
-            self.isAdmin = isAdmin
-            
-            if shouldFetchOnInit {
-                Task {
-                    await fetchCandidates()
-                }
-            }
+         isAdmin: Bool,
+         shouldFetchOnInit: Bool = true) {
+        self.networkService = networkService
+        self.isAdmin = isAdmin
+        
+        if shouldFetchOnInit {
+            loadInitialData()
         }
+    }
+    
+    /// Charge les données initiales de manière asynchrone
+    private func loadInitialData() {
+        Task { @MainActor in
+            await fetchCandidates()
+        }
+    }
+    
+    /// Réinitialise le ViewModel à son état initial
+    func reset() {
+        candidates = []
+        errorMessage = ""
+        showAlert = false
+        isLoading = false
+        searchText = ""
+        isEditing = false
+        selectedCandidates.removeAll()
+        showOnlyFavorites = false
+    }
     
     var filteredCandidates: [Candidate] {
         // Prepare search term
@@ -140,4 +157,11 @@ class CandidateListViewModel: ObservableObject {
         showAlert = true
         isLoading = false
     }
+    
+    #if DEBUG
+    /// Méthode utilisée uniquement pour les tests
+    func testHandleError(_ error: Error) {
+        handleError(error)
+    }
+    #endif
 }

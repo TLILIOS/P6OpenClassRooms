@@ -28,9 +28,6 @@ class ProfileViewModel: ObservableObject {
         self.editedCandidate = candidate
         self.isAdmin = isAdmin
         self.networkService = networkService
-//        Task {
-////            await fetchCandidate()
-//        }
     }
     
     // MARK: - Candidate Management
@@ -57,15 +54,21 @@ class ProfileViewModel: ObservableObject {
                 lastName: editedCandidate.lastName,
                 phone: editedCandidate.phone
             )
+            
+            // Effectuer la requête
             let updatedCandidate: Candidate = try await networkService.request(.updateCandidate(id: candidate.id, candidate: request))
-            candidate = updatedCandidate
-            editedCandidate = updatedCandidate
-            isEditing = false
+            
+            // Mettre à jour les propriétés
+            self.candidate = updatedCandidate
+            self.editedCandidate = updatedCandidate
+            self.isEditing = false
             isLoading = false
         } catch {
             handleError(error)
+            isLoading = false
         }
     }
+
     
     func toggleFavorite() async {
         guard !isLoading else { return }
@@ -76,22 +79,18 @@ class ProfileViewModel: ObservableObject {
         isLoading = true
         
         do {
-            // Mettre à jour l'état local immédiatement pour une meilleure réactivité
-            candidate.isFavorite.toggle()
-            editedCandidate.isFavorite = candidate.isFavorite
-            
             // Utiliser l'endpoint spécifique pour les favoris
             let response: Candidate = try await networkService.request(.toggleFavorite(id: candidate.id))
-            candidate = response
-            editedCandidate = response
+            
+            // Mettre à jour l'état avec la réponse du serveur
+            self.candidate = response
+            self.editedCandidate = response
+            
+            isLoading = false
         } catch {
-            // En cas d'erreur, restaurer l'état précédent
-            candidate.isFavorite.toggle()
-            editedCandidate.isFavorite = candidate.isFavorite
             handleError(error)
+            isLoading = false
         }
-        
-        isLoading = false
     }
     
     func cancelEditing() {
@@ -99,13 +98,21 @@ class ProfileViewModel: ObservableObject {
         isEditing = false
     }
     
+    // MARK: - Error Handling
     private func handleError(_ error: Error) {
         if let networkError = error as? NetworkService.NetworkError {
             errorMessage = networkError.message
         } else {
-            errorMessage = "Une erreur inattendue s'est produite"
+            errorMessage = error.localizedDescription
         }
         showAlert = true
         isLoading = false
     }
+    
+    #if DEBUG
+    /// Méthode utilisée uniquement pour les tests
+    func testHandleError(_ error: Error) {
+        handleError(error)
+    }
+    #endif
 }

@@ -3,109 +3,213 @@ import XCTest
 
 @MainActor
 final class AddCandidateViewModelTests: XCTestCase {
-    
-    var viewModel: AddCandidateViewModel!
+    var sut: AddCandidateViewModel!
     var mockNetworkService: MockNetworkService!
     
     override func setUp() async throws {
         try await super.setUp()
         mockNetworkService = MockNetworkService()
-        // Configurez un token par défaut pour éviter les erreurs de token manquant
-        await mockNetworkService.setToken("mockToken")
-        viewModel = AddCandidateViewModel(networkService: mockNetworkService)
+        await mockNetworkService.setToken("mock-token") // Ajouter un token mock
+        sut = AddCandidateViewModel(networkService: mockNetworkService)
     }
     
-    override func tearDown() {
-        viewModel = nil
+    override func tearDown() async throws {
+        sut = nil
         mockNetworkService = nil
-        super.tearDown()
+        try await super.tearDown()
     }
     
-    func testSaveCandidate_Success() async {
+    // MARK: - SaveCandidate Tests - Validation
+    
+    func testSaveCandidate_WithEmptyFirstName_ReturnsFalse() async {
         // Arrange
-        viewModel.firstName = "John"
-        viewModel.lastName = "Doe"
-        viewModel.email = "john.doe@example.com"
-        viewModel.phone = "1234567890"
+        sut.lastName = "Doe"
+        sut.email = "john.doe@test.com"
         
-        let candidateResponse = Candidate(
-            id: "123",
-            firstName: viewModel.firstName,
-            lastName: viewModel.lastName,
-            email: viewModel.email,
-            isFavorite: true
-        )
+        // Act
+        let result = await sut.saveCandidate()
         
-        let candidateRequest = CandidateRequest(
-            email: viewModel.email,
-            note: nil,
-            linkedinURL: nil,
-            firstName: viewModel.firstName,
-            lastName: viewModel.lastName,
-            phone: viewModel.phone
-        )
+        // Assert
+        XCTAssertFalse(result)
+        XCTAssertEqual(sut.errorMessage, "Veuillez remplir tous les champs requis")
+        XCTAssertTrue(sut.showAlert)
+    }
+    
+    func testSaveCandidate_WithEmptyLastName_ReturnsFalse() async {
+        // Arrange
+        sut.firstName = "John"
+        sut.email = "john.doe@test.com"
         
-        guard let mockURL = Endpoint.createCandidate(candidateRequest).url else {
-            XCTFail("URL non valide pour l'endpoint")
+        // Act
+        let result = await sut.saveCandidate()
+        
+        // Assert
+        XCTAssertFalse(result)
+        XCTAssertEqual(sut.errorMessage, "Veuillez remplir tous les champs requis")
+        XCTAssertTrue(sut.showAlert)
+    }
+    
+    func testSaveCandidate_WithEmptyEmail_ReturnsFalse() async {
+        // Arrange
+        sut.firstName = "John"
+        sut.lastName = "Doe"
+        
+        // Act
+        let result = await sut.saveCandidate()
+        
+        // Assert
+        XCTAssertFalse(result)
+        XCTAssertEqual(sut.errorMessage, "Veuillez remplir tous les champs requis")
+        XCTAssertTrue(sut.showAlert)
+    }
+    
+    func testSaveCandidate_WithInvalidEmail_ReturnsFalse() async {
+        // Arrange
+        sut.firstName = "John"
+        sut.lastName = "Doe"
+        sut.email = "invalid.email"
+        
+        // Act
+        let result = await sut.saveCandidate()
+        
+        // Assert
+        XCTAssertFalse(result)
+        XCTAssertEqual(sut.errorMessage, "Veuillez remplir tous les champs requis")
+        XCTAssertTrue(sut.showAlert)
+    }
+    
+    // MARK: - SaveCandidate Tests - Network
+    
+    func testSaveCandidate_Success() async throws {
+        // Arrange
+        setupValidCandidate()
+        let expectedCandidate = Candidate(id: "1", 
+                                        firstName: sut.firstName,
+                                        lastName: sut.lastName,
+                                        email: sut.email,
+                                        phone: sut.phone,
+                                        note: sut.note,
+                                        linkedinURL: sut.linkedinURL,
+                                        isFavorite: false)
+        
+        // Créer la requête pour obtenir l'URL correcte
+        let request = createCandidateRequest()
+        let endpoint = Endpoint.createCandidate(request)
+        guard let url = endpoint.url else {
+            XCTFail("URL invalide")
             return
         }
         
-        mockNetworkService.mockResponses[mockURL] = .success(try! JSONEncoder().encode(candidateResponse))
+        mockNetworkService.mockResponses[url] = .success(try JSONEncoder().encode(expectedCandidate))
         
         // Act
-        let result = await viewModel.saveCandidate()
+        let result = await sut.saveCandidate()
         
         // Assert
-        XCTAssertTrue(result, "La sauvegarde du candidat aurait dû réussir")
-        XCTAssertFalse(viewModel.showAlert, "Aucune alerte ne devrait être affichée en cas de succès")
-        XCTAssertEqual(viewModel.errorMessage, "", "Le message d'erreur devrait être vide en cas de succès")
+        XCTAssertTrue(result)
+        XCTAssertFalse(sut.showAlert)
+        XCTAssertTrue(sut.errorMessage.isEmpty)
     }
     
-    func testSaveCandidate_MissingFields() async {
+    func testSaveCandidate_WithServerError() async {
         // Arrange
-        viewModel.firstName = ""
-        viewModel.lastName = "Doe"
-        viewModel.email = "john.doe@example.com"
+        setupValidCandidate()
+        mockNetworkService.mockError = NetworkService.NetworkError.serverError(500, "Erreur serveur")
         
         // Act
-        let result = await viewModel.saveCandidate()
+        let result = await sut.saveCandidate()
         
         // Assert
-        XCTAssertFalse(result, "La sauvegarde ne devrait pas réussir avec des champs manquants")
-        XCTAssertTrue(viewModel.showAlert, "Une alerte devrait être affichée en cas de champs manquants")
-        XCTAssertEqual(viewModel.errorMessage, "Veuillez remplir tous les champs requis")
-        XCTAssertTrue(mockNetworkService.mockResponses.isEmpty, "Aucune requête réseau ne devrait être effectuée")
+        XCTAssertFalse(result)
+        XCTAssertTrue(sut.showAlert)
+        XCTAssertEqual(sut.errorMessage, "Erreur serveur")
     }
     
-    func testSaveCandidate_NetworkError() async {
+    func testSaveCandidate_WithMissingToken() async {
         // Arrange
-        viewModel.firstName = "John"
-        viewModel.lastName = "Doe"
-        viewModel.email = "john.doe@example.com"
-        viewModel.phone = "1234567890"
+        setupValidCandidate()
+        mockNetworkService.token = nil // Supprimer directement le token
         
-        let candidateRequest = CandidateRequest(
-            email: viewModel.email,
-            note: nil,
-            linkedinURL: nil,
-            firstName: viewModel.firstName,
-            lastName: viewModel.lastName,
-            phone: viewModel.phone
-        )
+        // Act
+        let result = await sut.saveCandidate()
         
-        guard let mockURL = Endpoint.createCandidate(candidateRequest).url else {
-            XCTFail("URL non valide pour l'endpoint")
+        // Assert
+        XCTAssertFalse(result)
+        XCTAssertTrue(sut.showAlert)
+        XCTAssertEqual(sut.errorMessage, "Token d'authentification manquant")
+    }
+    
+    func testSaveCandidate_WithUnexpectedError() async {
+        // Arrange
+        setupValidCandidate()
+        struct CustomError: Error {}
+        mockNetworkService.mockError = CustomError()
+        
+        // Act
+        let result = await sut.saveCandidate()
+        
+        // Assert
+        XCTAssertFalse(result)
+        XCTAssertTrue(sut.showAlert)
+        XCTAssertEqual(sut.errorMessage, "Une erreur inattendue s'est produite")
+    }
+    
+    // MARK: - SaveCandidate Tests - Optional Fields
+    
+    func testSaveCandidate_WithOptionalFieldsEmpty_Success() async throws {
+        // Arrange
+        sut.firstName = "John"
+        sut.lastName = "Doe"
+        sut.email = "john.doe@test.com"
+        // Laisser les champs optionnels vides
+        
+        let expectedCandidate = Candidate(id: "1",
+                                        firstName: sut.firstName,
+                                        lastName: sut.lastName,
+                                        email: sut.email,
+                                        phone: nil,
+                                        note: nil,
+                                        linkedinURL: nil,
+                                        isFavorite: false)
+        
+        // Créer la requête pour obtenir l'URL correcte
+        let request = createCandidateRequest()
+        let endpoint = Endpoint.createCandidate(request)
+        guard let url = endpoint.url else {
+            XCTFail("URL invalide")
             return
         }
         
-        mockNetworkService.mockResponses[mockURL] = .failure(NetworkService.NetworkError.serverError(500, "Erreur serveur"))
+        mockNetworkService.mockResponses[url] = .success(try JSONEncoder().encode(expectedCandidate))
         
         // Act
-        let result = await viewModel.saveCandidate()
+        let result = await sut.saveCandidate()
         
         // Assert
-        XCTAssertFalse(result, "La sauvegarde ne devrait pas réussir en cas d'erreur réseau")
-        XCTAssertTrue(viewModel.showAlert, "Une alerte devrait être affichée en cas d'erreur réseau")
-        XCTAssertEqual(viewModel.errorMessage, "Erreur serveur")
+        XCTAssertTrue(result)
+        XCTAssertFalse(sut.showAlert)
+        XCTAssertTrue(sut.errorMessage.isEmpty)
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func setupValidCandidate() {
+        sut.firstName = "John"
+        sut.lastName = "Doe"
+        sut.email = "john.doe@test.com"
+        sut.phone = "123456789"
+        sut.linkedinURL = "linkedin.com/johndoe"
+        sut.note = "Note test"
+    }
+    
+    private func createCandidateRequest() -> CandidateRequest {
+        CandidateRequest(
+            email: sut.email,
+            note: sut.note.isEmpty ? nil : sut.note,
+            linkedinURL: sut.linkedinURL.isEmpty ? nil : sut.linkedinURL,
+            firstName: sut.firstName,
+            lastName: sut.lastName,
+            phone: sut.phone.isEmpty ? nil : sut.phone
+        )
     }
 }

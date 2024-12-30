@@ -106,6 +106,37 @@ final class CandidateListViewModelTests: XCTestCase {
         XCTAssertFalse(sut.showOnlyFavorites, "Ne devrait pas filtrer les favoris")
     }
     
+    func testInit_WithoutFetchOnInit_DoesNotFetchCandidates() {
+        // Arrange & Act
+        let viewModel = CandidateListViewModel(networkService: mockNetworkService, 
+                                             isAdmin: true, 
+                                             shouldFetchOnInit: false)
+        
+        // Assert
+        XCTAssertTrue(viewModel.candidates.isEmpty)
+        XCTAssertFalse(viewModel.isLoading)
+    }
+    
+    func testInit_WithFetchOnInit_FetchesCandidates() async {
+        // Arrange
+        let candidates = [mockCandidates[0]]
+        mockNetworkService.mockResponses = [
+            Endpoint.candidates.url!: .success(try! JSONEncoder().encode(candidates))
+        ]
+        
+        // Act
+        let viewModel = CandidateListViewModel(networkService: mockNetworkService, 
+                                             isAdmin: true, 
+                                             shouldFetchOnInit: true)
+        
+        // Attendre un peu pour que la tâche asynchrone s'exécute
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconde
+        
+        // Assert
+        XCTAssertFalse(viewModel.candidates.isEmpty)
+        XCTAssertEqual(viewModel.candidates.count, candidates.count)
+    }
+    
     // MARK: - Fetch Tests
     func testFetchCandidatesSuccess() async throws {
         // Given
@@ -247,6 +278,83 @@ final class CandidateListViewModelTests: XCTestCase {
         XCTAssertFalse(sut.isLoading)
     }
     
+    func testHandleError_NetworkError() {
+        // Arrange
+        let error = NetworkService.NetworkError.unauthorized
+        
+        // Act
+        sut.testHandleError(error)
+        
+        // Assert
+        XCTAssertEqual(sut.errorMessage, "Non autorisé")
+        XCTAssertTrue(sut.showAlert)
+        XCTAssertFalse(sut.isLoading)
+    }
+    
+    func testHandleError_ServerError() {
+        // Arrange
+        let error = NetworkService.NetworkError.serverError(500, "Erreur interne du serveur")
+        
+        // Act
+        sut.testHandleError(error)
+        
+        // Assert
+        XCTAssertEqual(sut.errorMessage, "Erreur interne du serveur")
+        XCTAssertTrue(sut.showAlert)
+        XCTAssertFalse(sut.isLoading)
+    }
+    
+    func testHandleError_MissingToken() {
+        // Arrange
+        let error = NetworkService.NetworkError.missingToken
+        
+        // Act
+        sut.testHandleError(error)
+        
+        // Assert
+        XCTAssertEqual(sut.errorMessage, "Token d'authentification manquant")
+        XCTAssertTrue(sut.showAlert)
+        XCTAssertFalse(sut.isLoading)
+    }
+    
+    func testHandleError_NonNetworkError() {
+        // Arrange
+        struct CustomError: Error {}
+        let error = CustomError()
+        
+        // Act
+        sut.testHandleError(error)
+        
+        // Assert
+        XCTAssertEqual(sut.errorMessage, "Une erreur inattendue s'est produite")
+        XCTAssertTrue(sut.showAlert)
+        XCTAssertFalse(sut.isLoading)
+    }
+    
+    func testHandleError_ResetsLoadingState() {
+        // Arrange
+        sut.isLoading = true
+        let error = NetworkService.NetworkError.unknown
+        
+        // Act
+        sut.testHandleError(error)
+        
+        // Assert
+        XCTAssertFalse(sut.isLoading, "isLoading devrait être false après une erreur")
+    }
+    
+    func testHandleError_ShowsAlert() {
+        // Arrange
+        sut.showAlert = false
+        let error = NetworkService.NetworkError.unknown
+        
+        // Act
+        sut.testHandleError(error)
+        
+        // Assert
+        XCTAssertTrue(sut.showAlert, "showAlert devrait être true après une erreur")
+    }
+    
     // MARK: - Delete Selected Candidates Tests
     func testDeleteSelectedCandidatesSuccess() async throws {
         // Given
@@ -320,6 +428,80 @@ final class CandidateListViewModelTests: XCTestCase {
         XCTAssertEqual(sut.errorMessage, "Erreur serveur") // Mocked error message
     }
 
+    func testFetchCandidates_HandlesError() async {
+        // Arrange
+        mockNetworkService.mockError = NetworkService.NetworkError.serverError(500, "Erreur serveur")
+        
+        // Act
+        await sut.fetchCandidates()
+        
+        // Assert
+        XCTAssertEqual(sut.errorMessage, "Erreur serveur")
+        XCTAssertTrue(sut.showAlert)
+        XCTAssertFalse(sut.isLoading)
+        XCTAssertTrue(sut.candidates.isEmpty)
+        
+        // Clean up
+        mockNetworkService.mockError = nil
+    }
+    
+    func testDeleteCandidate_HandlesError() async {
+        // Arrange
+        mockNetworkService.mockError = NetworkService.NetworkError.unauthorized
+        
+        // Act
+        await sut.deleteCandidate(mockCandidates[0])
+        
+        // Assert
+        XCTAssertEqual(sut.errorMessage, "Non autorisé")
+        XCTAssertTrue(sut.showAlert)
+        XCTAssertFalse(sut.isLoading)
+        
+        // Clean up
+        mockNetworkService.mockError = nil
+    }
+    
+    func testToggleFavorite_HandlesError() async {
+        // Arrange
+        mockNetworkService.mockError = NetworkService.NetworkError.missingToken
+        
+        // Act
+        await sut.toggleFavorite(for: mockCandidates[0])
+        
+        // Assert
+        XCTAssertEqual(sut.errorMessage, "Token d'authentification manquant")
+        XCTAssertTrue(sut.showAlert)
+        XCTAssertFalse(sut.isLoading)
+        
+        // Clean up
+        mockNetworkService.mockError = nil
+    }
+
+    // MARK: - Reset Tests
+    func testReset_ResetsAllProperties() {
+        // Arrange
+        sut.candidates = [mockCandidates[0]]
+        sut.errorMessage = "Une erreur"
+        sut.showAlert = true
+        sut.isLoading = true
+        sut.searchText = "Recherche"
+        sut.isEditing = true
+        sut.selectedCandidates.insert(mockCandidates[0].id)
+        sut.showOnlyFavorites = true
+        
+        // Act
+        sut.reset()
+        
+        // Assert
+        XCTAssertTrue(sut.candidates.isEmpty)
+        XCTAssertTrue(sut.errorMessage.isEmpty)
+        XCTAssertFalse(sut.showAlert)
+        XCTAssertFalse(sut.isLoading)
+        XCTAssertTrue(sut.searchText.isEmpty)
+        XCTAssertFalse(sut.isEditing)
+        XCTAssertTrue(sut.selectedCandidates.isEmpty)
+        XCTAssertFalse(sut.showOnlyFavorites)
+    }
 }
 
 // MARK: - Extensions
