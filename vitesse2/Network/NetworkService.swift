@@ -2,7 +2,6 @@ import Foundation
 
 
 protocol NetworkServiceProtocol: Sendable {
-//    func setToken(_ token: String) async
     func request<T: Decodable>(_ endpoint: Endpoint) async throws -> T
     func requestWithoutResponse(_ endpoint: Endpoint) async throws
 }
@@ -56,7 +55,7 @@ actor NetworkService {
             }
             print("Using token for request: \(String(token.prefix(10)))...")
         }
-        
+//        Création de la requête
         var request = URLRequest(url: url)
         request.httpMethod = endpoint.method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -65,7 +64,7 @@ actor NetworkService {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             print("Added Authorization header: Bearer \(String(token.prefix(10)))...")
         }
-        
+//        Si un body est nécessaire
         if let body = endpoint.body {
             let jsonData = try? JSONEncoder().encode(body)
             request.httpBody = jsonData
@@ -73,7 +72,7 @@ actor NetworkService {
                 print("Request body: \(jsonString)")
             }
         }
-        
+//        On utilise URLSession.shared.data(for:) pour envoyer la requête.
         print("Making request to: \(url.absoluteString)")
         let (data, response) = try await URLSession.shared.data(for: request)
         

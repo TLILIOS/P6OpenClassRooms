@@ -63,7 +63,7 @@ final class LoginViewModelTests: XCTestCase {
         // Arrange
         let mockResponse = AuthResponse(token: "mockToken12345", isAdmin: true)
         let mockData = try! JSONEncoder().encode(mockResponse)
-        mockNetworkService.mockResponses[Endpoint.login(email: "test@example.com", password: "password123").url!] = .success(mockData)
+        mockNetworkService.mockResponses = .success(mockData)
         
         viewModel.email = "test@example.com"
         viewModel.password = "password123"
@@ -98,7 +98,7 @@ final class LoginViewModelTests: XCTestCase {
     func testLoginUnauthorized() async {
         // Arrange
         let mockError = NetworkService.NetworkError.unauthorized
-        mockNetworkService.mockResponses[Endpoint.login(email: "test@example.com", password: "wrongPassword").url!] = .failure(mockError)
+        mockNetworkService.mockResponses = .failure(mockError)
         
         viewModel.email = "test@example.com"
         viewModel.password = "wrongPassword"
@@ -116,7 +116,7 @@ final class LoginViewModelTests: XCTestCase {
     func testLoginServerError() async {
         // Arrange
         let mockError = NetworkService.NetworkError.serverError(500, "Erreur serveur: 500")
-        mockNetworkService.mockResponses[Endpoint.login(email: "test@example.com", password: "password123").url!] = .failure(mockError)
+        mockNetworkService.mockResponses = .failure(mockError)
         
         viewModel.email = "test@example.com"
         viewModel.password = "password123"

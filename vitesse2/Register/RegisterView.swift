@@ -75,9 +75,18 @@ struct RegisterView: View {
                     
                     // Lien pour revenir à la connexion
                     Button(action: { dismiss() }) {
-                        Text("Already have an account? Log in")
+                        Text("Already have an account ? Log in")
                             .foregroundColor(.blue)
+                        
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue
+                        .opacity(0.4))
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                    .padding(.horizontal)
+                    .disabled(viewModel.isLoading)
                     .padding(.top)
                 }
                 .padding()

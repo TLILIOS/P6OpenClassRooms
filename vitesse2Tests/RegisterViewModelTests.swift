@@ -17,7 +17,7 @@ final class RegisterViewModelTests: XCTestCase {
         mockNetworkService = nil
         super.tearDown()
     }
-    
+    // to do tester la login()
     // MARK: - Validation Tests
     func testValidRegistrationData() async {
         // Given
@@ -38,8 +38,8 @@ final class RegisterViewModelTests: XCTestCase {
         let registerData = try! JSONEncoder().encode(EmptyResponse())
         let loginData = try! JSONEncoder().encode(AuthResponse(token: "fake-token", isAdmin: false))
         
-        mockNetworkService.mockResponses[registerEndpoint.url!] = .success(registerData)
-        mockNetworkService.mockResponses[Endpoint.login(email: sut.email, password: sut.password).url!] = .success(loginData)
+        mockNetworkService.mockResponses = .success(registerData)
+//        mockNetworkService.mockResponses[Endpoint.login(email: sut.email, password: sut.password).url!] = .success(loginData)
         
         // Then
         await sut.register()
@@ -97,7 +97,7 @@ final class RegisterViewModelTests: XCTestCase {
             lastName: sut.lastName
         )
         
-        mockNetworkService.mockResponses[registerEndpoint.url!] = .failure(NetworkService.NetworkError.serverError(500, "Erreur serveur"))
+        mockNetworkService.mockResponses = .failure(NetworkService.NetworkError.serverError(500, "Erreur serveur"))
         
         // When
         await sut.register()

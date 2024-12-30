@@ -7,16 +7,16 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "C74F131A-3821-47D7-86F1-0BF99B69F4F3"
+            uuid = "43907F90-A67E-422F-B014-DC75802B54ED"
             shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "vitesse2/Network/NetworkService.swift"
+            filePath = "vitesse2Tests/AddCandidateViewModelTests.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "163"
-            endingLineNumber = "163"
-            landmarkName = "requestWithoutResponse(_:)"
+            startingLineNumber = "186"
+            endingLineNumber = "186"
+            landmarkName = "testSaveCandidate_WithOptionalFieldsEmpty_Success()"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

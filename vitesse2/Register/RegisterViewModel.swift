@@ -58,19 +58,22 @@ class RegisterViewModel: ObservableObject {
                 firstName: firstName,
                 lastName: lastName
             ))
-            // Since registration was successful, we'll need to log in to get the token
-            let authResponse: AuthResponse = try await networkService.request(.login(
-                email: email,
-                password: password
-            ))
-            TokenManager.shared.saveToken(authResponse.token)
+           
             isRegistered = true
+            
         } catch {
             handleError(error)
         }
         isLoading = false
     }
-    
+//    func login() async throws  {
+//        // Since registration was successful, we'll need to log in to get the token
+//        let authResponse: AuthResponse = try await networkService.request(.login(
+//            email: email,
+//            password: password
+//        ))
+//        TokenManager.shared.saveToken(authResponse.token)
+//    }
     // MARK: - Error Handling
     private func handleError(_ error: Error) {
         if let networkError = error as? NetworkService.NetworkError {

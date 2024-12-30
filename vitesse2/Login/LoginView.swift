@@ -14,11 +14,10 @@ struct LoginView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 20) {
-                // Logo ou titre
-                Text("Vitesse")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .padding(.bottom, 30)
+                Spacer()
+                // Logo et titre
+                Image("Vitesse_P6")
+                    .padding(.bottom, 60)
                 
                 // Champs de saisie
                 VStack(spacing: 15) {
@@ -59,7 +58,7 @@ struct LoginView: View {
                     Text("Register")
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.blue.opacity(0.1))
+                        .background(Color.blue.opacity(0.4))
                         .foregroundColor(.blue)
                         .cornerRadius(10)
                 }

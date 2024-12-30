@@ -100,7 +100,7 @@ final class AddCandidateViewModelTests: XCTestCase {
             return
         }
         
-        mockNetworkService.mockResponses[url] = .success(try JSONEncoder().encode(expectedCandidate))
+        mockNetworkService.mockResponses = .success(try JSONEncoder().encode(expectedCandidate))
         
         // Act
         let result = await sut.saveCandidate()
@@ -173,14 +173,14 @@ final class AddCandidateViewModelTests: XCTestCase {
                                         isFavorite: false)
         
         // Créer la requête pour obtenir l'URL correcte
-        let request = createCandidateRequest()
-        let endpoint = Endpoint.createCandidate(request)
-        guard let url = endpoint.url else {
-            XCTFail("URL invalide")
-            return
-        }
+//        let request = createCandidateRequest()
+//        let endpoint = Endpoint.createCandidate(request)
+//        guard let url = endpoint.url else {
+//            XCTFail("URL invalide")
+//            return
+//        }
         
-        mockNetworkService.mockResponses[url] = .success(try JSONEncoder().encode(expectedCandidate))
+        mockNetworkService.mockResponses = .success(try JSONEncoder().encode(expectedCandidate))
         
         // Act
         let result = await sut.saveCandidate()

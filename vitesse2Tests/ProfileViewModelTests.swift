@@ -33,7 +33,7 @@ final class ProfileViewModelTests: XCTestCase {
         
         // Injecter des réponses simulées dans le MockNetworkService
         let candidateData = try JSONEncoder().encode(mockCandidate)
-        mockNetworkService.mockResponses[Endpoint.candidate(id: "1").url!] = .success(candidateData)
+        mockNetworkService.mockResponses = .success(candidateData)
 
         // Initialiser le ViewModel
         viewModel = ProfileViewModel(candidate: mockCandidate, isAdmin: true, networkService: mockNetworkService)
@@ -51,7 +51,7 @@ final class ProfileViewModelTests: XCTestCase {
 
     func testFetchCandidateFailure() async throws {
         // Injecter une erreur spécifique
-        mockNetworkService.mockResponses[Endpoint.candidate(id: "1").url!] = .failure(NetworkService.NetworkError.missingToken)
+        mockNetworkService.mockResponses = .failure(NetworkService.NetworkError.missingToken)
         
         // Appeler fetchCandidate
         await viewModel.fetchCandidate()
@@ -85,7 +85,7 @@ final class ProfileViewModelTests: XCTestCase {
         }
         
         print("URL configurée pour update: \(url.absoluteString)")
-        mockNetworkService.mockResponses[url] = .success(updatedData)
+        mockNetworkService.mockResponses = .success(updatedData)
         
         // Modifier le prénom
         viewModel.editedCandidate.firstName = "Jane"
@@ -113,7 +113,7 @@ final class ProfileViewModelTests: XCTestCase {
         }
         
         print("URL configurée pour toggle: \(url.absoluteString)")
-        mockNetworkService.mockResponses[url] = .success(toggledData)
+        mockNetworkService.mockResponses = .success(toggledData)
         
         // Exécuter le toggle
         await viewModel.toggleFavorite()
@@ -124,7 +124,7 @@ final class ProfileViewModelTests: XCTestCase {
     }
 
     func testToggleFavoriteFailure() async throws {
-        mockNetworkService.mockResponses[Endpoint.toggleFavorite(id: "1").url!] = .failure(NetworkService.NetworkError.missingToken)
+        mockNetworkService.mockResponses = .failure(NetworkService.NetworkError.missingToken)
         await viewModel.toggleFavorite()
         
         XCTAssertFalse(viewModel.candidate.isFavorite)
@@ -266,7 +266,7 @@ final class ProfileViewModelTests: XCTestCase {
     
     func testHandleError_CustomErrorWithDescription() {
         // Arrange
-        class CustomDescriptionError: NSError, @unchecked Sendable {
+        class CustomDescriptionError: NSError {
             override var description: String {
                 return "Description personnalisée de l'erreur"
             }

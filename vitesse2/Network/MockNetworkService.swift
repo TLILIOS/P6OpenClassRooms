@@ -8,7 +8,7 @@
 import Foundation
 
 class MockNetworkService: NetworkServiceProtocol, @unchecked Sendable {
-    var mockResponses: [URL: Result<Data, Error>] = [:]
+    var mockResponses:  Result<Data, Error>?
     var token: String?
     var mockError: Error?
     
@@ -29,7 +29,7 @@ class MockNetworkService: NetworkServiceProtocol, @unchecked Sendable {
             throw NetworkService.NetworkError.missingToken
         }
         
-        guard let result = mockResponses[url] else {
+        guard let result = mockResponses else {
             throw NetworkService.NetworkError.unknown
         }
         
@@ -59,7 +59,7 @@ class MockNetworkService: NetworkServiceProtocol, @unchecked Sendable {
             throw NetworkService.NetworkError.missingToken
         }
         
-        guard let result = mockResponses[url] else {
+        guard let result = mockResponses else {
             throw NetworkService.NetworkError.unknown
         }
         
