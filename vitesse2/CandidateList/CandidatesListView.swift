@@ -54,7 +54,8 @@ struct CandidatesListView: View {
                     Button(action: {
                         viewModel.showOnlyFavorites.toggle()
                     }) {
-                        Image(systemName: "star")
+                        Image(systemName: viewModel.showOnlyFavorites ? "star.fill" : "star")
+                            .foregroundColor(viewModel.showOnlyFavorites ? .yellow : .gray)
                     }
                 }
                 

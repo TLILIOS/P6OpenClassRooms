@@ -266,7 +266,7 @@ final class ProfileViewModelTests: XCTestCase {
     
     func testHandleError_CustomErrorWithDescription() {
         // Arrange
-        class CustomDescriptionError: NSError {
+        class CustomDescriptionError: NSError, @unchecked Sendable {
             override var description: String {
                 return "Description personnalisée de l'erreur"
             }

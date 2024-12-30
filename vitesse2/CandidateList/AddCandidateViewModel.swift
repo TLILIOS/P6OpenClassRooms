@@ -44,7 +44,7 @@ class AddCandidateViewModel: ObservableObject {
             return true
         } catch let error as NetworkService.NetworkError {
             switch error {
-            case .serverError(_, let message):
+            case .serverError(_, _):
                 errorMessage = "Erreur serveur" // Utilise le message renvoyé par le serveur
             case .missingToken:
                 errorMessage = "Token d'authentification manquant"

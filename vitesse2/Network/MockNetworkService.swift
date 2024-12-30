@@ -7,7 +7,7 @@
 
 import Foundation
 
-class MockNetworkService: NetworkServiceProtocol {
+class MockNetworkService: NetworkServiceProtocol, @unchecked Sendable {
     var mockResponses: [URL: Result<Data, Error>] = [:]
     var token: String?
     var mockError: Error?
